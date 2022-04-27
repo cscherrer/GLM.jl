@@ -187,7 +187,7 @@ true
 function inverselink end
 
 """
-    canonicallink(D::Distribution)
+    canonicallink(D)
 
 Return the canonical link for distribution `D`, which must be in the exponential family.
 
@@ -282,7 +282,7 @@ mueta(::ProbitLink, η::Real) = exp(-abs2(η) / 2) / sqrt2π
 function inverselink(::ProbitLink, η::Real)
     μ   =  cdf(Normal(), η)
     omμ = ccdf(Normal(), η)
-    return μ, omμ, pdf(Normal(), η)
+    return μ, omμ, densityof(Normal(), η)
 end
 
 linkfun(::SqrtLink, μ::Real) = sqrt(μ)
@@ -299,7 +299,7 @@ canonicallink(::Normal) = IdentityLink()
 canonicallink(::Poisson) = LogLink()
 
 """
-    GLM.glmvar(D::Distribution, μ::Real)
+    GLM.glmvar(D, μ::Real)
 
 Return the value of the variance function for `D` at `μ`
 
@@ -334,7 +334,7 @@ glmvar(::Normal, μ::Real) = one(μ)
 glmvar(::Poisson, μ::Real) = μ
 
 """
-    GLM.mustart(D::Distribution, y, wt)
+    GLM.mustart(D, y, wt)
 
 Return a starting value for μ.
 
@@ -449,7 +449,7 @@ dispersion_parameter(::Union{Bernoulli, Binomial, Poisson}) = false
 """
     GLM.loglik_obs(D, y, μ, wt, ϕ)
 
-Returns `wt * logpdf(D(μ, ϕ), y)` where the parameters of `D` are derived from `μ` and `ϕ`.
+Returns `wt * logdensityof(D(μ, ϕ), y)` where the parameters of `D` are derived from `μ` and `ϕ`.
 
 The `wt` argument is a multiplier of the result except in the case of the `Binomial` where
 `wt` is the number of trials and `μ` is the proportion of successes.
@@ -458,15 +458,15 @@ The loglikelihood of a fitted model is the sum of these values over all the obse
 """
 function loglik_obs end
 
-loglik_obs(::Bernoulli, y, μ, wt, ϕ) = wt*logpdf(Bernoulli(μ), y)
-loglik_obs(::Binomial, y, μ, wt, ϕ) = logpdf(Binomial(Int(wt), μ), Int(y*wt))
-loglik_obs(::Gamma, y, μ, wt, ϕ) = wt*logpdf(Gamma(inv(ϕ), μ*ϕ), y)
-loglik_obs(::InverseGaussian, y, μ, wt, ϕ) = wt*logpdf(InverseGaussian(μ, inv(ϕ)), y)
-loglik_obs(::Normal, y, μ, wt, ϕ) = wt*logpdf(Normal(μ, sqrt(ϕ)), y)
-loglik_obs(::Poisson, y, μ, wt, ϕ) = wt*logpdf(Poisson(μ), y)
+loglik_obs(::Bernoulli, y, μ, wt, ϕ) = wt*logdensityof(Bernoulli(μ), y)
+loglik_obs(::Binomial, y, μ, wt, ϕ) = logdensityof(Binomial(round(Int, wt), μ), round(Int, y*wt))
+loglik_obs(::Gamma, y, μ, wt, ϕ) = wt*logdensityof(Gamma(inv(ϕ), μ*ϕ), y)
+loglik_obs(::InverseGaussian, y, μ, wt, ϕ) = wt*logdensityof(InverseGaussian(μ, inv(ϕ)), y)
+loglik_obs(::Normal, y, μ, wt, ϕ) = wt*logdensityof(Normal(μ, sqrt(ϕ)), y)
+loglik_obs(::Poisson, y, μ, wt, ϕ) = wt*logdensityof(Poisson(μ), y)
 # We use the following parameterization for the Negative Binomial distribution:
 #    (Γ(θ+y) / (Γ(θ) * y!)) * μ^y * θ^θ / (μ+θ)^{θ+y}
 # The parameterization of NegativeBinomial(r=θ, p) in Distributions.jl is
 #    Γ(θ+y) / (y! * Γ(θ)) * p^θ(1-p)^y
 # Hence, p = θ/(μ+θ)
-loglik_obs(d::NegativeBinomial, y, μ, wt, ϕ) = wt*logpdf(NegativeBinomial(d.r, d.r/(μ+d.r)), y)
+loglik_obs(d::NegativeBinomial, y, μ, wt, ϕ) = wt*logdensityof(NegativeBinomial(d.r, d.r/(μ+d.r)), y)

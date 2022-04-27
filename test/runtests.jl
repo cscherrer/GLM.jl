@@ -2,7 +2,7 @@ using CategoricalArrays, CSV, DataFrames, LinearAlgebra, SparseArrays, StableRNG
       Statistics, StatsBase, Test, RDatasets
 using GLM
 using StatsFuns: logistic
-using Distributions: TDist
+using MeasureTheory: StudentT
 
 test_show(x) = show(IOBuffer(), x)
 
@@ -646,9 +646,9 @@ end
 
     @test pred1 == pred2.prediction ≈
         [1.1382137814295972, 1.2097057044789292, 1.7983095679661645, 1.0139576473310072, 0.9738243263215998]
-    @test pred2.lower ≈ pred2.prediction - quantile(TDist(dof_residual(mm)), 0.975)*se_pred ≈
+    @test pred2.lower ≈ pred2.prediction - quantile(StudentT(dof_residual(mm)), 0.975)*se_pred ≈
         [0.5483482828723035, 0.3252331944785751, 0.6367574076909834, 0.34715818536935505, -0.41478974520958345]
-    @test pred2.upper ≈ pred2.prediction + quantile(TDist(dof_residual(mm)), 0.975)*se_pred ≈
+    @test pred2.upper ≈ pred2.prediction + quantile(StudentT(dof_residual(mm)), 0.975)*se_pred ≈
         [1.7280792799868907, 2.0941782144792835, 2.9598617282413455, 1.6807571092926594, 2.362438397852783]
 
     @test ndims(pred1) == 1
@@ -660,9 +660,9 @@ end
     pred3 = predict(mm, newX, interval=:prediction)
     @test pred1 == pred3.prediction ≈
         [1.1382137814295972, 1.2097057044789292, 1.7983095679661645, 1.0139576473310072, 0.9738243263215998]
-    @test pred3.lower ≈ pred3.prediction - quantile(TDist(dof_residual(mm)), 0.975)*sqrt.(diag(newX*vcov(mm)*newX') .+ deviance(mm)/dof_residual(mm)) ≈
+    @test pred3.lower ≈ pred3.prediction - quantile(StudentT(dof_residual(mm)), 0.975)*sqrt.(diag(newX*vcov(mm)*newX') .+ deviance(mm)/dof_residual(mm)) ≈
         [-1.6524055967145255, -1.6576810549645142, -1.1662846080257512, -1.7939306570282658, -2.0868723667435027]
-    @test pred3.upper ≈ pred3.prediction + quantile(TDist(dof_residual(mm)), 0.975)*sqrt.(diag(newX*vcov(mm)*newX') .+ deviance(mm)/dof_residual(mm)) ≈
+    @test pred3.upper ≈ pred3.prediction + quantile(StudentT(dof_residual(mm)), 0.975)*sqrt.(diag(newX*vcov(mm)*newX') .+ deviance(mm)/dof_residual(mm)) ≈
         [3.9288331595737196, 4.077092463922373, 4.762903743958081, 3.82184595169028, 4.034521019386702]
 
     # Prediction with dropcollinear (#409)

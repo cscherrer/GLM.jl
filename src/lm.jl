@@ -226,8 +226,8 @@ function coeftable(mm::LinearModel; level::Real=0.95)
     se = stderror(mm)
     tt = cc ./ se
     if dofr > 0
-        p = ccdf.(Ref(FDist(1, dofr)), abs2.(tt))
-        ci = se*quantile(TDist(dofr), (1-level)/2)
+        p = ccdf.(Ref(SnedecorF(1, dofr)), abs2.(tt))
+        ci = se*quantile(StudentT(dofr), (1-level)/2)
     else
         p = [isnan(t) ? NaN : 1.0 for t in tt]
         ci = [isnan(t) ? NaN : -Inf for t in tt]
@@ -281,13 +281,13 @@ function predict(mm::LinearModel, newx::AbstractMatrix;
     else
         error("only :confidence and :prediction intervals are defined")
     end
-    retinterval = quantile(TDist(dof_residual(mm)), (1. - level)/2) * sqrt.(retvariance)
+    retinterval = quantile(StudentT(dof_residual(mm)), (1. - level)/2) * sqrt.(retvariance)
     (prediction = retmean, lower = retmean .+ retinterval, upper = retmean .- retinterval)
 end
 
 function confint(obj::LinearModel; level::Real=0.95)
     hcat(coef(obj),coef(obj)) + stderror(obj) *
-    quantile(TDist(dof_residual(obj)), (1. - level)/2.) * [1. -1.]
+    quantile(StudentT(dof_residual(obj)), (1. - level)/2.) * [1. -1.]
 end
 
 """

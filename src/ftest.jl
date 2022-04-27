@@ -64,7 +64,7 @@ function ftest(mod::LinearModel)
     n = Int(nobs(mod))
     p = dof(mod) - 2 # -2 for intercept and dispersion parameter
     fstat = ((tss - rss) / rss) * ((n - p - 1) / p)
-    fdist = FDist(p, dof_residual(mod))
+    fdist = SnedecorF(p, dof_residual(mod))
 
     SingleFTestResult(n, p, promote(fstat, ccdf(fdist, abs(fstat)))...)
 end
@@ -165,7 +165,7 @@ function ftest(mods::LinearModel...; atol::Real=0.0)
     end
 
     fstat = (NaN, (MSR1 ./ MSR2)...)
-    pval = (NaN, ccdf.(FDist.(abs.(Δdf), dfr_big), abs.(fstat[2:end]))...)
+    pval = (NaN, ccdf.(SnedecorF.(abs.(Δdf), dfr_big), abs.(fstat[2:end]))...)
     return FTestResult(Int(nobs(mods[1])), SSR, df, r2.(mods), fstat, pval)
 end
 

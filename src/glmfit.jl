@@ -3,7 +3,7 @@
 
 The response vector and various derived vectors in a generalized linear model.
 """
-struct GlmResp{V<:FPVector,D<:UnivariateDistribution,L<:Link} <: ModResp
+struct GlmResp{V<:FPVector,D,L<:Link} <: ModResp
     "`y`: response vector"
     y::V
     d::D
@@ -49,7 +49,7 @@ function GlmResp(y::V, d::D, l::L, η::V, μ::V, off::V, wts::V) where {V<:FPVec
     return GlmResp{V,D,L}(y, d, similar(y), η, μ, off, wts, similar(y), similar(y))
 end
 
-function GlmResp(y::FPVector, d::Distribution, l::Link, off::FPVector, wts::FPVector)
+function GlmResp(y::FPVector, d, l::Link, off::FPVector, wts::FPVector)
     # Instead of convert(Vector{Float64}, y) to be more ForwardDiff friendly
     _y   = convert(Vector{float(eltype(y))}, y)
     _off = convert(Vector{float(eltype(off))}, off)
@@ -460,9 +460,9 @@ const FIT_GLM_DOC = """
 
 """
     fit(GeneralizedLinearModel, formula, data,
-        distr::UnivariateDistribution, link::Link = canonicallink(d); <keyword arguments>)
+        distr, link::Link = canonicallink(d); <keyword arguments>)
     fit(GeneralizedLinearModel, X::AbstractMatrix, y::AbstractVector,
-        distr::UnivariateDistribution, link::Link = canonicallink(d); <keyword arguments>)
+        distr, link::Link = canonicallink(d); <keyword arguments>)
 
 Fit a generalized linear model to data.
 
@@ -471,7 +471,7 @@ $FIT_GLM_DOC
 function fit(::Type{M},
     X::AbstractMatrix{<:FP},
     y::AbstractVector{<:Real},
-    d::UnivariateDistribution,
+    d,
     l::Link = canonicallink(d);
     dofit::Bool = true,
     wts::AbstractVector{<:Real}      = similar(y, 0),
@@ -491,15 +491,15 @@ end
 fit(::Type{M},
     X::AbstractMatrix,
     y::AbstractVector,
-    d::UnivariateDistribution,
+    d,
     l::Link=canonicallink(d); kwargs...) where {M<:AbstractGLM} =
         fit(M, float(X), float(y), d, l; kwargs...)
 
 """
     glm(formula, data,
-        distr::UnivariateDistribution, link::Link = canonicallink(d); <keyword arguments>)
+        distr, link::Link = canonicallink(d); <keyword arguments>)
     glm(X::AbstractMatrix, y::AbstractVector,
-        distr::UnivariateDistribution, link::Link = canonicallink(d); <keyword arguments>)
+        distr, link::Link = canonicallink(d); <keyword arguments>)
 
 Fit a generalized linear model to data. Alias for `fit(GeneralizedLinearModel, ...)`.
 
@@ -512,8 +512,8 @@ GLM.Link(r::GlmResp{T,D,L}) where {T,D,L} = L()
 GLM.Link(r::GlmResp{T,D,L}) where {T,D<:NegativeBinomial,L<:NegativeBinomialLink} = L(r.d.r)
 GLM.Link(m::GeneralizedLinearModel) = Link(m.rr)
 
-Distributions.Distribution(r::GlmResp{T,D,L}) where {T,D,L} = D
-Distributions.Distribution(m::GeneralizedLinearModel) = Distribution(m.rr)
+# Distributions.Distribution(r::GlmResp{T,D,L}) where {T,D,L} = D
+# Distributions.Distribution(m::GeneralizedLinearModel) = Distribution(m.rr)
 
 """
     dispersion(m::AbstractGLM, sqr::Bool=false)
@@ -600,7 +600,7 @@ end
 
 # A helper function to choose default values for eta
 function initialeta!(eta::AbstractVector,
-                    dist::UnivariateDistribution,
+                    dist,
                     link::Link,
                     y::AbstractVector,
                     wts::AbstractVector,
@@ -637,7 +637,7 @@ function initialeta!(eta::AbstractVector,
 end
 
 # Helper function to check that the values of y are in the allowed domain
-function checky(y, d::Distribution)
+function checky(y, d)
     if any(x -> !insupport(d, x), y)
         throw(ArgumentError("y must be in the support of D"))
     end
