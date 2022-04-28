@@ -447,7 +447,7 @@ dispersion_parameter(D) = true
 dispersion_parameter(::Union{Bernoulli, Binomial, Poisson}) = false
 
 """
-    GLM.loglik_obs(D, y, μ, wt, ϕ)
+    GLM.loglik(D, y, μ, wt, ϕ)
 
 Returns `wt * logdensityof(D(μ, ϕ), y)` where the parameters of `D` are derived from `μ` and `ϕ`.
 
@@ -456,17 +456,82 @@ The `wt` argument is a multiplier of the result except in the case of the `Binom
 
 The loglikelihood of a fitted model is the sum of these values over all the observations.
 """
-function loglik_obs end
+function loglik end
 
-loglik_obs(::Bernoulli, y, μ, wt, ϕ) = logdensityof(Bernoulli(μ) ↑ wt, y)
-loglik_obs(::Binomial, y, μ, wt, ϕ) = logdensityof(Binomial(round(Int, wt), μ), round(Int, y*wt))
-loglik_obs(::Gamma, y, μ, wt, ϕ) = logdensityof(Gamma(μ=μ,ϕ=ϕ) ↑ wt, y)
-loglik_obs(::InverseGaussian, y, μ, wt, ϕ) = logdensityof(InverseGaussian(μ, inv(ϕ)) ↑ wt, y)
-loglik_obs(::Normal, y, μ, wt, ϕ) = logdensityof(Normal(μ=μ, σ²=ϕ) ↑ wt, y)
-loglik_obs(::Poisson, y, μ, wt, ϕ) = logdensityof(Poisson(μ) ↑ wt, y)
-# We use the following parameterization for the Negative Binomial distribution:
-#    (Γ(θ+y) / (Γ(θ) * y!)) * μ^y * θ^θ / (μ+θ)^{θ+y}
-# The parameterization of NegativeBinomial(r=θ, p) in Distributions.jl is
-#    Γ(θ+y) / (y! * Γ(θ)) * p^θ(1-p)^y
-# Hence, p = θ/(μ+θ)
-loglik_obs(d::NegativeBinomial, y, μ, wt, ϕ) = wt*logdensityof(NegativeBinomial(d.r, d.r/(μ+d.r)), y)
+loglik(d, μ, ϕ, y, wts) = logdensityof(loglik_dist(d, μ, ϕ, wts), y)
+loglik(d, μ, ϕ, y) = logdensityof(loglik_dist(d, μ, ϕ), y)
+
+using Static
+function loglik_dist(d::D, μ, ϕ, wts) where {D}
+    ϕ = static(ϕ)
+    dist = MeasureTheory.constructorof(D)
+    For(μ,wts) do m,w
+        dist(μ=m, ϕ=ϕ) ↑ w
+    end
+end
+
+function loglik_dist(d::D, μ, ϕ) where {D}
+    ϕ = static(ϕ)
+    dist = MeasureTheory.constructorof(D)
+    For(μ) do m
+        dist(μ=m, ϕ=ϕ)
+    end
+end
+
+function loglik_dist(d::Poisson, μ, ϕ, wts)
+    For(μ,wts) do m,w
+        Poisson(m) ↑ w
+    end
+end
+
+function loglik_dist(d::Poisson, μ, ϕ)
+    For(μ) do m
+        Poisson(m)
+    end
+end
+
+function loglik_dist(d::Binomial, μ, ϕ, wts)
+    For(μ,wts) do m,w
+        Binomial(round(Int, w), m)
+    end
+end
+
+function loglik_dist(d::Union{<:Binomial, <:Bernoulli}, μ, ϕ)
+    For(μ) do m
+        Bernoulli(m)
+    end
+end
+
+
+function loglik_dist(d::Bernoulli, μ, ϕ, wts)
+    For(μ,wts) do m,w
+        Bernoulli(m) ↑ w
+    end
+end
+
+function loglik(d::Binomial, μ, ϕ, y, wts) 
+    dist = For(μ,wts) do m,w
+        Binomial(round(Int, w), m)
+    end
+    data = round.(Int, y .* wts)
+    logdensityof(dist, data)
+end
+
+function loglik_dist(d::NegativeBinomial, μ, ϕ, wts) 
+    For(μ,wts) do m,w
+        NegativeBinomial(d.r, d.r/(m+d.r)) ↑ w
+    end
+end
+
+function loglik_dist(d::NegativeBinomial, μ, ϕ) 
+    For(μ) do m
+        NegativeBinomial(d.r, d.r/(m+d.r))
+    end
+end
+
+# # We use the following parameterization for the Negative Binomial distribution:
+# #    (Γ(θ+y) / (Γ(θ) * y!)) * μ^y * θ^θ / (μ+θ)^{θ+y}
+# # The parameterization of NegativeBinomial(r=θ, p) in Distributions.jl is
+# #    Γ(θ+y) / (y! * Γ(θ)) * p^θ(1-p)^y
+# # Hence, p = θ/(μ+θ)
+# loglik(d::NegativeBinomial, μ, ϕ, y) = logdensityof(NegativeBinomial(d.r, d.r/(μ+d.r)), y)

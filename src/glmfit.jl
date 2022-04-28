@@ -257,14 +257,10 @@ function loglikelihood(m::AbstractGLM)
     ll  = zero(eltype(mu))
     if length(wts) == length(y)
         ϕ = deviance(m)/sum(wts)
-        @inbounds for i in eachindex(y, mu, wts)
-            ll += loglik_obs(d, y[i], mu[i], wts[i], ϕ)
-        end
+        ll = loglik(d, mu, ϕ, y, wts)
     else
         ϕ = deviance(m)/length(y)
-        @inbounds for i in eachindex(y, mu)
-            ll += loglik_obs(d, y[i], mu[i], 1, ϕ)
-        end
+        ll = loglik(d, mu, ϕ, y)
     end
     ll
 end
