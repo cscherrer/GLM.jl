@@ -460,7 +460,7 @@ function loglik_obs end
 
 loglik_obs(::Bernoulli, y, μ, wt, ϕ) = logdensityof(Bernoulli(μ) ↑ wt, y)
 loglik_obs(::Binomial, y, μ, wt, ϕ) = logdensityof(Binomial(round(Int, wt), μ), round(Int, y*wt))
-loglik_obs(::Gamma, y, μ, wt, ϕ) = logdensityof(Gamma(inv(ϕ), μ*ϕ) ↑ wt, y)
+loglik_obs(::Gamma, y, μ, wt, ϕ) = logdensityof(Gamma(μ=μ,ϕ=ϕ) ↑ wt, y)
 loglik_obs(::InverseGaussian, y, μ, wt, ϕ) = logdensityof(InverseGaussian(μ, inv(ϕ)) ↑ wt, y)
 loglik_obs(::Normal, y, μ, wt, ϕ) = logdensityof(Normal(μ=μ, σ²=ϕ) ↑ wt, y)
 loglik_obs(::Poisson, y, μ, wt, ϕ) = logdensityof(Poisson(μ) ↑ wt, y)
