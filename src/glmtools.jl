@@ -458,12 +458,12 @@ The loglikelihood of a fitted model is the sum of these values over all the obse
 """
 function loglik_obs end
 
-loglik_obs(::Bernoulli, y, μ, wt, ϕ) = wt*logdensityof(Bernoulli(μ), y)
+loglik_obs(::Bernoulli, y, μ, wt, ϕ) = logdensityof(Bernoulli(μ) ↑ wt, y)
 loglik_obs(::Binomial, y, μ, wt, ϕ) = logdensityof(Binomial(round(Int, wt), μ), round(Int, y*wt))
-loglik_obs(::Gamma, y, μ, wt, ϕ) = wt*logdensityof(Gamma(inv(ϕ), μ*ϕ), y)
-loglik_obs(::InverseGaussian, y, μ, wt, ϕ) = wt*logdensityof(InverseGaussian(μ, inv(ϕ)), y)
-loglik_obs(::Normal, y, μ, wt, ϕ) = wt*logdensityof(Normal(μ, sqrt(ϕ)), y)
-loglik_obs(::Poisson, y, μ, wt, ϕ) = wt*logdensityof(Poisson(μ), y)
+loglik_obs(::Gamma, y, μ, wt, ϕ) = logdensityof(Gamma(inv(ϕ), μ*ϕ) ↑ wt, y)
+loglik_obs(::InverseGaussian, y, μ, wt, ϕ) = logdensityof(InverseGaussian(μ, inv(ϕ)) ↑ wt, y)
+loglik_obs(::Normal, y, μ, wt, ϕ) = logdensityof(Normal(μ=μ, σ²=ϕ) ↑ wt, y)
+loglik_obs(::Poisson, y, μ, wt, ϕ) = logdensityof(Poisson(μ) ↑ wt, y)
 # We use the following parameterization for the Negative Binomial distribution:
 #    (Γ(θ+y) / (Γ(θ) * y!)) * μ^y * θ^θ / (μ+θ)^{θ+y}
 # The parameterization of NegativeBinomial(r=θ, p) in Distributions.jl is
